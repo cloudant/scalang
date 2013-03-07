@@ -1,8 +1,9 @@
 To release;
 
-1) update the version in pom.xml
+1) Update the version in pom.xml to a non-snapshot version
 2) commit it
 3) tag it
-4) ssh to maven.cloudant.com
-5) clone the repo
-6) mvn deploy -DupdateReleaseInfo=true -DaltDeploymentRepository=cloudant::default::file:///var/www/domains/cloudant.com/maven/htdocs/repo
+4) Update the version in pom.xml to next snapshot version
+5) commit it
+6) checkout tag
+7) mvn deploy
