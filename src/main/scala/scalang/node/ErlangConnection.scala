@@ -127,7 +127,7 @@ class ErlangConnection(node : ErlangNode, peer : Symbol, config : NodeConfig) ex
         }
       })
       'ok
-    } else if (handshakeFuture.isDone) {
+    } else if (handshakeFuture != null && handshakeFuture.isDone) {
       'alive
     } else {
       'ok_simultaneous
