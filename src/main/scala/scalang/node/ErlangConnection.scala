@@ -81,8 +81,9 @@ class ErlangConnection(node : ErlangNode, peer : Symbol, config : NodeConfig) ex
   }
   
   def close {
-    if (channelRef.get != null) {
-      channelRef.get.close
+    val channel = channelRef.get
+    if (channel != null) {
+      channel.close
     }
   }
   
