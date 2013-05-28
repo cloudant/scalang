@@ -90,7 +90,7 @@ class ErlangConnection(node : ErlangNode, peer : Symbol, config : NodeConfig) ex
     val hostname = Hostname.splitHostname(peer).getOrElse(throw new ErlangNodeException("Cannot resolve peer with no hostname: " + peer.name))
     val peerName = Hostname.splitNodename(peer)
     val port = Epmd(hostname).lookupPort(peerName).getOrElse(throw new ErlangNodeException("Cannot lookup peer: " + peer.name))
-    val client = new ErlangNodeClient(node, peer, hostname, port, None, 
+    new ErlangNodeClient(node, peer, hostname, port, None,
       config.typeFactory,
       config.typeEncoder,
       config.typeDecoder)
