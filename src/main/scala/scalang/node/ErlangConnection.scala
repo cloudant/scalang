@@ -112,8 +112,7 @@ class ErlangConnection(node : ErlangNode, peer : Symbol, config : NodeConfig) ex
   
   // this is safe, will not clobber connections. 
   def connectRequested(future : ChannelFuture, channel : Channel) : Symbol = {
-    val oldChannel = channelRef.get
-    if (oldChannel == null && channelRef.compareAndSet(oldChannel, channel)) {
+    if (channelRef.compareAndSet(null, channel)) {
       handshakeFuture = future
       drained = false
       handshakeFuture.addListener(new ChannelFutureListener {
