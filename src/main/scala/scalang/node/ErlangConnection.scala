@@ -59,12 +59,15 @@ class ErlangConnection(node : ErlangNode, peer : Symbol, config : NodeConfig) ex
   
   def write(msg : Any) : ChannelFuture = {
     queueLock.readLock {
-      if (!drained) {
-        val future = Channels.future(channelRef.get)
+      val channel = channelRef.get
+      if (channel == null) {
+        null
+      } else if (!drained) {
+        val future = Channels.future(channel)
         queue.offer((future,msg))
         future
       } else {
-        channelRef.get.write(msg)
+        channel.write(msg)
       }
     }
   }
