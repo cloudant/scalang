@@ -59,12 +59,15 @@ class ErlangConnection(node : ErlangNode, peer : Symbol, config : NodeConfig) ex
   
   def write(msg : Any) : ChannelFuture = {
     queueLock.readLock {
-      if (!drained) {
-        val future = Channels.future(channelRef.get)
+      val channel = channelRef.get
+      if (channel == null) {
+        null
+      } else if (!drained) {
+        val future = Channels.future(channel)
         queue.offer((future,msg))
         future
       } else {
-        channelRef.get.write(msg)
+        channel.write(msg)
       }
     }
   }
@@ -81,8 +84,9 @@ class ErlangConnection(node : ErlangNode, peer : Symbol, config : NodeConfig) ex
   }
   
   def close {
-    if (channelRef.get != null) {
-      channelRef.get.close
+    val channel = channelRef.get
+    if (channel != null) {
+      channel.close
     }
   }
   
@@ -90,7 +94,7 @@ class ErlangConnection(node : ErlangNode, peer : Symbol, config : NodeConfig) ex
     val hostname = Hostname.splitHostname(peer).getOrElse(throw new ErlangNodeException("Cannot resolve peer with no hostname: " + peer.name))
     val peerName = Hostname.splitNodename(peer)
     val port = Epmd(hostname).lookupPort(peerName).getOrElse(throw new ErlangNodeException("Cannot lookup peer: " + peer.name))
-    val client = new ErlangNodeClient(node, peer, hostname, port, None, 
+    new ErlangNodeClient(node, peer, hostname, port, None,
       config.typeFactory,
       config.typeEncoder,
       config.typeDecoder)
@@ -112,8 +116,7 @@ class ErlangConnection(node : ErlangNode, peer : Symbol, config : NodeConfig) ex
   
   // this is safe, will not clobber connections. 
   def connectRequested(future : ChannelFuture, channel : Channel) : Symbol = {
-    val oldChannel = channelRef.get
-    if (oldChannel == null && channelRef.compareAndSet(oldChannel, channel)) {
+    if (channelRef.compareAndSet(null, channel)) {
       handshakeFuture = future
       drained = false
       handshakeFuture.addListener(new ChannelFutureListener {
@@ -162,7 +165,8 @@ class ErlangConnection(node : ErlangNode, peer : Symbol, config : NodeConfig) ex
   
   protected def drainQueue {
     queueLock.writeLock {
-      val p = channelRef.get.getPipeline
+      val channel = channelRef.get
+      val p = channel.getPipeline
       val keys = p.toMap.keySet
       for (name <- List("handshakeFramer", "handshakeDecoder", "handshakeEncoder", "handshakeHandler"); if keys.contains(name)) {
         p.remove(name)
@@ -175,7 +179,7 @@ class ErlangConnection(node : ErlangNode, peer : Symbol, config : NodeConfig) ex
       p.addAfter("erlangCounter", "failureDetector", new FailureDetectionHandler(peer, new SystemClock, config.tickTime, node.timer))
       
       for ((future,msg) <- queue) {
-        channelRef.get.write(msg)
+        channel.write(msg)
         future.setSuccess
       }
       queue.clear
