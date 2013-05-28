@@ -162,7 +162,8 @@ class ErlangConnection(node : ErlangNode, peer : Symbol, config : NodeConfig) ex
   
   protected def drainQueue {
     queueLock.writeLock {
-      val p = channelRef.get.getPipeline
+      val channel = channelRef.get
+      val p = channel.getPipeline
       val keys = p.toMap.keySet
       for (name <- List("handshakeFramer", "handshakeDecoder", "handshakeEncoder", "handshakeHandler"); if keys.contains(name)) {
         p.remove(name)
@@ -175,7 +176,7 @@ class ErlangConnection(node : ErlangNode, peer : Symbol, config : NodeConfig) ex
       p.addAfter("erlangCounter", "failureDetector", new FailureDetectionHandler(peer, new SystemClock, config.tickTime, node.timer))
       
       for ((future,msg) <- queue) {
-        channelRef.get.write(msg)
+        channel.write(msg)
         future.setSuccess
       }
       queue.clear
