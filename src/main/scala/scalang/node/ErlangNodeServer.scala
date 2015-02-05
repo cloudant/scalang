@@ -30,6 +30,7 @@ class ErlangNodeServer(node : ErlangNode, typeFactory : TypeFactory, typeEncoder
     new NioServerSocketChannelFactory(
       node.poolFactory.createBossPool,
       node.poolFactory.createWorkerPool))
+  bootstrap.setOption("tcpNoDelay", true)
   bootstrap.setOption("child.tcpNoDelay", true)
   bootstrap.setPipelineFactory(new ChannelPipelineFactory {
     def getPipeline : ChannelPipeline = {
