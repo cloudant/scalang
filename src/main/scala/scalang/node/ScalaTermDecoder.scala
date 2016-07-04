@@ -257,7 +257,7 @@ class ScalaTermDecoder(peer : Symbol, factory : TypeFactory, decoder : TypeDecod
     val bytes = new Array[Byte](8)
     buffer.readBytes(bytes, 0, length)
     val little = ChannelBuffers.wrappedBuffer(ByteOrder.LITTLE_ENDIAN, bytes)
-    little.readLong
+    sign * little.readLong
   }
 
   def readReversed(length : Int, buffer : ChannelBuffer) : Array[Byte] = {
