@@ -84,6 +84,11 @@ class ScalaTermDecoderSpec extends SpecificationWithJUnit {
         thing must ==(720575940379279360L)
       }
 
+      "read -ve longs" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(110,4,1,2,0,0,128)))
+        thing must ==(-2147483650.0)
+      }
+
       "read references" in {
         val thing = decoder.readTerm(copiedBuffer(ByteArray(114,0,3,100,0,13,110,111,110,111,100,101,64,110,111,104,111,115,116,0,0,0,0,99,0,0,0,0,0,0,0,0)))
         thing must ==(Reference(Symbol("nonode@nohost"), Seq(99,0,0), 0))
