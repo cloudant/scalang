@@ -241,6 +241,16 @@ class ScalaTermDecoder(peer : Symbol, factory : TypeFactory, decoder : TypeDecod
         val function = readTerm(buffer).asInstanceOf[Symbol]
         val arity = readTerm(buffer).asInstanceOf[Int]
         ExportFun(module, function, arity)
+      case 118 => // atom_utf8_ext
+        val len = buffer.readShort
+        val bytes = new Array[Byte](len)
+        buffer.readBytes(bytes)
+        CachedSymbol(new String(bytes, "UTF-8"))
+      case 119 => // small_atom_utf8_ext
+        val len = buffer.readUnsignedByte
+        val bytes = new Array[Byte](len)
+        buffer.readBytes(bytes)
+        CachedSymbol(new String(bytes, "UTF-8"))
       case 77 => //bit binary
         val length = buffer.readInt
         val bits = buffer.readUnsignedByte
