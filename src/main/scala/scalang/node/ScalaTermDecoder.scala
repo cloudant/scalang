@@ -126,11 +126,7 @@ class ScalaTermDecoder(peer : Symbol, factory : TypeFactory, decoder : TypeDecod
       case 100 => //atom OR boolean
         val len = buffer.readShort
         val str = ScalaTermDecoder.fastString(buffer, len)
-        CachedSymbol(str) match {
-          case 'true => true
-          case 'false => false
-          case atom => atom
-        }
+        atomOrBoolean(str)
       case 101 => //reference
         val node = readTerm(buffer).asInstanceOf[Symbol]
         val id = buffer.readInt
@@ -206,11 +202,7 @@ class ScalaTermDecoder(peer : Symbol, factory : TypeFactory, decoder : TypeDecod
       case 115 => //small atom
         val length = buffer.readUnsignedByte
         val str = ScalaTermDecoder.fastString(buffer, length)
-        CachedSymbol(str) match {
-          case 'true => true
-          case 'false => false
-          case atom => atom
-        }
+        atomOrBoolean(str)
       case 117 => //fun
         val numFree = buffer.readInt
         val pid = readTerm(buffer).asInstanceOf[Pid]
@@ -245,12 +237,12 @@ class ScalaTermDecoder(peer : Symbol, factory : TypeFactory, decoder : TypeDecod
         val len = buffer.readShort
         val bytes = new Array[Byte](len)
         buffer.readBytes(bytes)
-        CachedSymbol(new String(bytes, "UTF-8"))
+        atomOrBoolean(new String(bytes, "UTF-8"))
       case 119 => // small_atom_utf8_ext
         val len = buffer.readUnsignedByte
         val bytes = new Array[Byte](len)
         buffer.readBytes(bytes)
-        CachedSymbol(new String(bytes, "UTF-8"))
+        atomOrBoolean(new String(bytes, "UTF-8"))
       case 77 => //bit binary
         val length = buffer.readInt
         val bits = buffer.readUnsignedByte
@@ -342,4 +334,11 @@ class ScalaTermDecoder(peer : Symbol, factory : TypeFactory, decoder : TypeDecod
     }).toSeq
     new BigTuple(Seq(first) ++ elements)
   }
+
+  private def atomOrBoolean(str : String) = str match {
+    case "true" => true
+    case "false" => false
+    case str => CachedSymbol(str)
+  }
+
 }

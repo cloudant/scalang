@@ -94,9 +94,39 @@ class ScalaTermDecoderSpec extends SpecificationWithJUnit {
         thing must ==(Reference(Symbol("nonode@nohost"), Seq(99,0,0), 0))
       }
 
-      "small atoms" in {
+      "read small atoms" in {
         val thing = decoder.readTerm(copiedBuffer(ByteArray(115,1,97)))
         thing must ==('a)
+      }
+
+      "read utf8 atoms" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(118,0,1,97)))
+        thing must ==('a)
+      }
+
+      "read small utf8 atoms" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(119,1,97)))
+        thing must ==('a)
+      }
+
+      "atom to boolean" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(100,0,4,116,114,117,101)))
+        thing must ==(true)
+      }
+
+      "small atom to boolean" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(115,4,116,114,117,101)))
+        thing must ==(true)
+      }
+
+      "utf8 atom to boolean" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(118,0,4,116,114,117,101)))
+        thing must ==(true)
+      }
+
+      "small utf8 atom to boolean" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(119,4,116,114,117,101)))
+        thing must ==(true)
       }
 
       "bit binaries" in {
