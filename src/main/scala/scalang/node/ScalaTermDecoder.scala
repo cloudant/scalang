@@ -59,6 +59,20 @@ object ScalaTermDecoder {
     }
     result
   }
+
+  private val atomEmpty = Array[Byte]()
+  private val atomNull = Array[Byte](0x6e, 0x75, 0x6c, 0x6c)
+  private val atomNil = Array[Byte](0x6e, 0x69, 0x6c)
+  private val atomTrue = Array[Byte](0x74, 0x72, 0x75, 0x65)
+  private val atomFalse = Array[Byte](0x66, 0x61, 0x6c, 0x73, 0x65)
+  private val atomGenCast = Array[Byte](0x24, 0x67, 0x65, 0x6e, 0x5f, 0x63, 0x61, 0x73, 0x74)
+  private val atomGenCall = Array[Byte](0x24, 0x67, 0x65, 0x6e, 0x5f, 0x63, 0x61, 0x6c, 0x6c)
+  private val atomUpdate = Array[Byte](0x75, 0x70, 0x64, 0x61, 0x74, 0x65)
+  private val atomSearch = Array[Byte](0x73, 0x65, 0x61, 0x72, 0x63, 0x68)
+  private val atomMain = Array[Byte](0x6d, 0x61, 0x69, 0x6e)
+  private val atomRelevance = Array[Byte](0x72, 0x65, 0x6c, 0x65, 0x76, 0x61, 0x6e, 0x63, 0x65)
+  private val atomCleanup = Array[Byte](0x63, 0x6c, 0x65, 0x61, 0x6e, 0x75, 0x70)
+  private val atomClouseauNodeName = Array[Byte](0x63, 0x6c, 0x6f, 0x75, 0x73, 0x65, 0x61, 0x75, 0x40, 0x31, 0x32, 0x37, 0x2e, 0x30, 0x2e, 0x30, 0x2e, 0x31)
 }
 
 class ScalaTermDecoder(peer : Symbol, factory : TypeFactory, decoder : TypeDecoder = NoneTypeDecoder) extends OneToOneDecoder with Instrumented {
@@ -242,7 +256,35 @@ class ScalaTermDecoder(peer : Symbol, factory : TypeFactory, decoder : TypeDecod
         val len = buffer.readUnsignedByte
         val bytes = new Array[Byte](len)
         buffer.readBytes(bytes)
-        atomOrBoolean(new String(bytes, "UTF-8"))
+        if (java.util.Arrays.equals(bytes, ScalaTermDecoder.atomEmpty)) {
+           CachedSymbol("")
+        } else if (java.util.Arrays.equals(bytes, ScalaTermDecoder.atomTrue)) {
+           true
+        } else if (java.util.Arrays.equals(bytes, ScalaTermDecoder.atomFalse)) {
+           false
+       } else if (java.util.Arrays.equals(bytes, ScalaTermDecoder.atomNull) ) {
+           CachedSymbol("null")
+       } else if (java.util.Arrays.equals(bytes, ScalaTermDecoder.atomNil) ) {
+           CachedSymbol("nil")
+        } else if (java.util.Arrays.equals(bytes, ScalaTermDecoder.atomGenCast) ) {
+           CachedSymbol("$gen_cast")
+        } else if (java.util.Arrays.equals(bytes, ScalaTermDecoder.atomGenCall) ) {
+           CachedSymbol("$gen_call")
+        } else if (java.util.Arrays.equals(bytes, ScalaTermDecoder.atomUpdate) ) {
+           CachedSymbol("update")
+        }  else if (java.util.Arrays.equals(bytes, ScalaTermDecoder.atomSearch) ) {
+           CachedSymbol("search")
+        }  else if (java.util.Arrays.equals(bytes, ScalaTermDecoder.atomMain) ) {
+           CachedSymbol("main")
+        }  else if (java.util.Arrays.equals(bytes, ScalaTermDecoder.atomRelevance) ) {
+           CachedSymbol("relevance")
+        }  else if (java.util.Arrays.equals(bytes, ScalaTermDecoder.atomCleanup) ) {
+           CachedSymbol("cleanup")
+        } else if (java.util.Arrays.equals(bytes, ScalaTermDecoder.atomClouseauNodeName)) {
+           CachedSymbol("clouseau@127.0.0.1")
+        } else {
+            CachedSymbol(new String(bytes, "UTF-8"))
+        }
       case 77 => //bit binary
         val length = buffer.readInt
         val bits = buffer.readUnsignedByte

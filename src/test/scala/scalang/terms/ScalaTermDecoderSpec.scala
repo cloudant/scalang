@@ -124,9 +124,69 @@ class ScalaTermDecoderSpec extends SpecificationWithJUnit {
         thing must ==(true)
       }
 
-      "small utf8 atom to boolean" in {
+      "true utf8 atom" in {
         val thing = decoder.readTerm(copiedBuffer(ByteArray(119,4,116,114,117,101)))
         thing must ==(true)
+      }
+
+      "false utf8 atom" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(119,5,102,97,108,115,101)))
+        thing must ==(false)
+      }
+
+      "empty string utf8 atom" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(119,0)))
+        thing must ==(Symbol(""))
+      }
+
+      "nil utf8 atom" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(119,3,110,105,108)))
+        thing must ==('nil)
+      }
+
+      "null utf8 atom" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(119,4,110,117,108,108)))
+        thing must ==('null)
+      }
+
+      "gen_cast utf8 atom" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(119,9,36,103,101,110,95,99,97,115,116)))
+        thing must ==('$gen_cast)
+      }
+
+      "gen_call utf8 atom" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(119,9,36,103,101,110,95,99,97,108,108)))
+        thing must ==('$gen_call)
+      }
+
+      "update utf8 atom" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(119,6,117,112,100,97,116,101)))
+        thing must ==('update)
+      }
+
+      "search utf8 atom" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(119,6,115,101,97,114,99,104)))
+        thing must ==('search)
+      }
+
+      "main utf8 atom" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(119,4,109,97,105,110)))
+        thing must ==('main)
+      }
+
+      "relevance utf8 atom" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(119,9,114,101,108,101,118,97,110,99,101)))
+        thing must ==('relevance)
+      }
+
+      "cleanup utf8 atom" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(119,7,99,108,101,97,110,117,112)))
+        thing must ==('cleanup)
+      }
+
+     "clouseau utf8 atom node name" in {
+        val thing = decoder.readTerm(copiedBuffer(ByteArray(119,18,99,108,111,117,115,101,97,117,64,49,50,55,46,48,46,48,46,49)))
+        thing must ==(Symbol("clouseau@127.0.0.1"))
       }
 
       "bit binaries" in {
