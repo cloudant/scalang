@@ -15,16 +15,10 @@
 //
 package scalang
 
-import org.cliffc.high_scale_lib._
-import scalang.node.{ExitListener, SendListener, ProcessLike}
-import org.jetlang.channels._
-import org.jetlang.core._
-import com.codahale.logula.Logging
-import java.util.concurrent.TimeUnit
-import com.yammer.metrics.scala._
+import scalang.node.ProcessLike
 import scala._
 
-abstract class Process(ctx : ProcessContext) extends ProcessLike with Logging {
+abstract class Process(ctx : ProcessContext) extends ProcessLike {
   val self = ctx.pid 
   val adapter = ctx.adapter
   val referenceCounter = ctx.referenceCounter

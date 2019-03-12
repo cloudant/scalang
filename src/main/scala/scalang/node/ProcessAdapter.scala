@@ -16,35 +16,36 @@
 package scalang.node
 
 import scalang._
-import com.yammer.metrics.scala._
+//import com.yammer.metrics.scala._
 import org.jetlang.fibers._
 import org.jetlang.channels._
 import org.jetlang.core._
-import com.codahale.logula.Logging
 import java.util.concurrent.TimeUnit
 import org.cliffc.high_scale_lib.NonBlockingHashSet
 import org.cliffc.high_scale_lib.NonBlockingHashMap
 import scala.collection.JavaConversions._
+import org.apache.log4j.Logger
 
 abstract class ProcessHolder(ctx : ProcessContext) extends ProcessAdapter {
   val self = ctx.pid
   val fiber = ctx.fiber
-  val messageRate = metrics.meter("messages", "messages", instrumentedName)
-  val executionTimer = metrics.timer("execution", instrumentedName)
+  //val messageRate = metrics.meter("messages", "messages", instrumentedName)
+  //val executionTimer = metrics.timer("execution", instrumentedName)
+  val logger = Logger.getLogger("ProcessHolder")
   def process : ProcessLike
   
   val msgChannel = new MemoryChannel[Any]
   msgChannel.subscribe(fiber, new Callback[Any] {
     def onMessage(msg : Any) {
-      executionTimer.time {
+      //executionTimer.time {
         try {
           process.handleMessage(msg)
         } catch {
           case e : Throwable =>
-            log.error(e, "An error occurred in actor %s", process)
-            exit(e.getMessage)
+            logger.error(e, "An error occurred in actor %s", process)
+            process.exit(e.getMessage)
         }
-      }
+      //}
     }
   })
   
@@ -55,8 +56,8 @@ abstract class ProcessHolder(ctx : ProcessContext) extends ProcessAdapter {
         process.handleExit(msg._1, msg._2)
       } catch {
         case e : Throwable =>
-          log.error(e, "An error occurred during handleExit in actor %s", this)
-          exit(e.getMessage)
+          logger.error(e, "An error occurred during handleExit in actor %s", this)
+          process.exit(e.getMessage)
       }
     }
   })
@@ -68,14 +69,14 @@ abstract class ProcessHolder(ctx : ProcessContext) extends ProcessAdapter {
         process.handleMonitorExit(msg._1, msg._2, msg._3)
       } catch {
         case e : Throwable =>
-          log.error(e, "An error occurred during handleMonitorExit in actor %s", this)
-          exit(e.getMessage)
+          logger.error(e, "An error occurred during handleMonitorExit in actor %s", this)
+          process.exit(e.getMessage)
       }
     }
   })
   
   override def handleMessage(msg : Any) {
-    messageRate.mark
+    //messageRate.mark
     msgChannel.publish(msg)
   }
 
@@ -89,12 +90,12 @@ abstract class ProcessHolder(ctx : ProcessContext) extends ProcessAdapter {
   
   def cleanup {
     fiber.dispose
-    metricsRegistry.removeMetric(getClass, "messages", instrumentedName)
-    metricsRegistry.removeMetric(getClass, "execution", instrumentedName)
+    //metricsRegistry.removeMetric(getClass, "messages", instrumentedName)
+    //metricsRegistry.removeMetric(getClass, "execution", instrumentedName)
   }
 }
 
-trait ProcessAdapter extends ExitListenable with SendListenable with LinkListenable with MonitorListenable with Instrumented with Logging {
+trait ProcessAdapter extends ExitListenable with SendListenable with LinkListenable with MonitorListenable  {
   var state = 'alive
   def self : Pid
   def fiber : Fiber
@@ -143,7 +144,12 @@ trait ProcessAdapter extends ExitListenable with SendListenable with LinkListena
     for (listener <- linkListeners) {
       l.addLinkListener(listener)
     }
-    links.add(l)
+    synchronized {
+      if (state != 'alive)
+        l.break('noproc)
+      else
+        links.add(l)
+    }
     l
   }
 

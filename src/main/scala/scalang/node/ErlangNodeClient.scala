@@ -22,7 +22,6 @@ import netty.channel._
 import netty.bootstrap._
 import netty.handler.codec.frame._
 import socket.nio.NioClientSocketChannelFactory
-import com.codahale.logula.Logging
 
 
 class ErlangNodeClient(
@@ -33,7 +32,8 @@ class ErlangNodeClient(
     control : Option[Any],
     typeFactory : TypeFactory,
     typeEncoder : TypeEncoder,
-    afterHandshake : Channel => Unit) extends Logging
+    typeDecoder : TypeDecoder,
+    afterHandshake : Channel => Unit)
 {
   val bootstrap = new ClientBootstrap(
     new NioClientSocketChannelFactory(
@@ -52,7 +52,7 @@ class ErlangNodeClient(
       pipeline.addLast("handshakeHandler", new ClientHandshakeHandler(node.name, node.cookie, node.posthandshake))
       pipeline.addLast("erlangFramer", new LengthFieldBasedFrameDecoder(Int.MaxValue, 0, 4, 0, 4))
       pipeline.addLast("encoderFramer", new LengthFieldPrepender(4))
-      pipeline.addLast("erlangDecoder", new ScalaTermDecoder(peer, typeFactory))
+      pipeline.addLast("erlangDecoder", new ScalaTermDecoder(peer, typeFactory, typeDecoder))
       pipeline.addLast("erlangEncoder", new ScalaTermEncoder(peer, typeEncoder))
       pipeline.addLast("erlangHandler", new ErlangHandler(node, afterHandshake))
 

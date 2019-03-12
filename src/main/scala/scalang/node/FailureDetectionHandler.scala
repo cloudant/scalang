@@ -4,14 +4,15 @@ import org.jboss.{netty => netty}
 import netty.channel._
 import netty.util._
 import netty.handler.timeout._
-import com.codahale.logula.Logging
 import java.util.concurrent._
+import org.apache.log4j.Logger
 
-class FailureDetectionHandler(node : Symbol, clock : Clock, tickTime : Int, timer : Timer) extends SimpleChannelHandler with Logging {
+class FailureDetectionHandler(node : Symbol, clock : Clock, tickTime : Int, timer : Timer) extends SimpleChannelHandler  {
   @volatile var nextTick : Timeout = null
   @volatile var lastTimeReceived = 0l
   @volatile var ctx : ChannelHandlerContext = null
   val exception = new ReadTimeoutException
+  val logger = Logger.getLogger("ScalaTermEncoder")
 
   override def channelOpen(ctx : ChannelHandlerContext, e : ChannelStateEvent) {
     this.ctx = ctx
@@ -38,7 +39,7 @@ class FailureDetectionHandler(node : Symbol, clock : Clock, tickTime : Int, time
     override def run(timeout : Timeout) {
       val last = (clock.currentTimeMillis - lastTimeReceived) / 1000
       if (last > (tickTime - tickTime/4)) {
-        log.warn("Connection to %s has failed for %d seconds. Closing the connection.", node, last)
+        logger.warn("Connection to %s has failed for %d seconds. Closing the connection.", node, last)
         Channels.fireExceptionCaught(ctx, exception);
       }
       ctx.getChannel.write(Tick)

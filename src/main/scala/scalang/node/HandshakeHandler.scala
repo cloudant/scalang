@@ -15,23 +15,17 @@
 //
 package scalang.node
 
-import java.net._
-import java.util.concurrent._
-import atomic._
 import org.jboss.{netty => netty}
-import netty.bootstrap._
 import netty.channel._
-import netty.handler.codec.frame._
 import scalang._
 import util._
 import java.util.ArrayDeque
-import scala.annotation._
 import scala.math._
 import scala.collection.JavaConversions._
 import java.security.{SecureRandom,MessageDigest}
-import com.codahale.logula.Logging
+import org.apache.log4j.Logger
 
-abstract class HandshakeHandler(posthandshake : (Symbol,ChannelPipeline) => Unit) extends SimpleChannelHandler with StateMachine with Logging {
+abstract class HandshakeHandler(posthandshake : (Symbol,ChannelPipeline) => Unit) extends SimpleChannelHandler with StateMachine  {
   override val start = 'disconnected
   @volatile var ctx : ChannelHandlerContext = null
   @volatile var peer : Symbol = null
@@ -40,6 +34,7 @@ abstract class HandshakeHandler(posthandshake : (Symbol,ChannelPipeline) => Unit
 
   val messages = new ArrayDeque[MessageEvent]
   val random = SecureRandom.getInstance("SHA1PRNG")
+  val logger = Logger.getLogger("HandshakeHandler")
 
   def isVerified = currentState == 'verified
 
@@ -64,13 +59,13 @@ abstract class HandshakeHandler(posthandshake : (Symbol,ChannelPipeline) => Unit
 
   override def channelClosed(ctx : ChannelHandlerContext, e : ChannelStateEvent) {
     this.ctx = ctx
-    log.error("Channel closed during handshake")
+    logger.error("Channel closed during handshake")
     handshakeFailed
   }
 
   override def exceptionCaught(ctx : ChannelHandlerContext, e : ExceptionEvent) {
     this.ctx = ctx
-    log.error(e.getCause, "Exception caught during erlang handshake: ")
+    logger.error("Exception caught during erlang handshake: ")
     handshakeFailed
   }
 

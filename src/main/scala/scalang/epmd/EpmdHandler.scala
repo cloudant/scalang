@@ -15,19 +15,16 @@
 //
 package scalang.epmd
 
-import java.net._
 import java.util.concurrent.{ConcurrentLinkedQueue, Callable, CountDownLatch, atomic => atomic}
 import atomic._
 import org.jboss.{netty => netty}
-import netty.bootstrap._
 import netty.channel._
-import netty.handler.codec.frame._
-import scala.collection.JavaConversions._
-import com.codahale.logula.Logging
 import java.util.concurrent.TimeUnit
+import org.apache.log4j.Logger
 
-class EpmdHandler extends SimpleChannelUpstreamHandler with Logging {
+class EpmdHandler extends SimpleChannelUpstreamHandler  {
   val queue = new ConcurrentLinkedQueue[EpmdResponse]
+  val logger = Logger.getLogger("EpmdHandler")
 
   def response : Callable[Any] = {
     val call = new EpmdResponse
@@ -36,11 +33,11 @@ class EpmdHandler extends SimpleChannelUpstreamHandler with Logging {
   }
 
   override def channelClosed(ctx : ChannelHandlerContext, e : ChannelStateEvent) {
-    log.debug("Oh snap channel closed.")
+    logger.debug("Oh snap channel closed.")
   }
 
   override def channelDisconnected(ctx : ChannelHandlerContext, e : ChannelStateEvent) {
-    log.debug("Uh oh disconnect.")
+    logger.debug("Uh oh disconnect.")
   }
 
   override def exceptionCaught(ctx : ChannelHandlerContext, e : ExceptionEvent) {
@@ -53,10 +50,12 @@ class EpmdHandler extends SimpleChannelUpstreamHandler with Logging {
 
   override def messageReceived(ctx : ChannelHandlerContext, e : MessageEvent) {
     val response = e.getMessage
-    var rsp = queue.poll
-    while (rsp != null) {
+    val rsp = queue.poll()
+    if (rsp != null) {
       rsp.set(response)
-      rsp = queue.poll
+    }
+    else {
+      logger.warn("Unable to find EpmdResponse for: %s".format(response))
     }
   }
 
@@ -67,13 +66,13 @@ class EpmdHandler extends SimpleChannelUpstreamHandler with Logging {
 
     def setError(t : Throwable) {
       error.set(t)
-      lock.countDown
+      lock.countDown()
 
     }
 
     def set(v : Any) {
       response.set(v)
-      lock.countDown
+      lock.countDown()
     }
 
     def call : Any = {

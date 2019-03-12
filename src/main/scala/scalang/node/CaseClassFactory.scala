@@ -35,7 +35,7 @@ class CaseClassFactory(searchPrefixes : Seq[String], typeMappings : Map[String,C
   protected def tryCreateInstance(reader : TermReader, clazz : Class[_], arity : Int) : Option[Any] = {
     val candidates = for (constructor <- clazz.getConstructors if constructor.getParameterTypes.length == arity-1) yield {constructor}
     if (candidates.isEmpty) return None
-    reader.mark
+    //reader.mark
     val parameters = for (i <- (1 until arity)) yield { reader.readTerm }
     val classes = parameters.map { case param : AnyRef =>
       param.getClass

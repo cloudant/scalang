@@ -16,12 +16,8 @@
 package scalang
 
 import java.util.concurrent.atomic._
-import java.net.InetSocketAddress
-import java.util.concurrent.Executors
 import org.jboss.{netty => netty}
 import netty.channel._
-import netty.bootstrap._
-import socket.nio.NioServerSocketChannelFactory
 import java.util.concurrent._
 import scalang.node._
 import org.cliffc.high_scale_lib._
@@ -29,19 +25,15 @@ import overlock.atomicmap._
 import org.jetlang._
 import core._
 import java.io._
-import fibers.CappedFiberFactory
-import core.BatchExecutorImpl
 import netty.handler.execution.ExecutionHandler
 import scala.collection.JavaConversions._
 import scalang.epmd._
 import scalang.util._
 import java.security.SecureRandom
-import com.codahale.logula.Logging
-import org.apache.log4j.Level
-import org.jboss.netty.logging._
 import netty.util.HashedWheelTimer
-import com.yammer.metrics.scala._
-import java.nio.channels.ClosedChannelException
+import org.apache.log4j.Logger
+//import com.yammer.metrics.scala._
+import org.jetlang.fibers.PoolFiberFactory
 
 object Node {
   val random = SecureRandom.getInstance("SHA1PRNG")
@@ -185,9 +177,10 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
     with LinkListener
     with MonitorListener
     with ReplyRegistry
-    with Instrumented
-    with Logging {
-  InternalLoggerFactory.setDefaultFactory(new Log4JLoggerFactory)
+   {
+  //InternalLoggerFactory.setDefaultFactory(new Slf4JLoggerFactory)
+  val logger = Logger.getLogger("Node")
+
 
   val timer = new HashedWheelTimer
   val tickTime = config.tickTime
@@ -201,9 +194,9 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
   val pidCount = new AtomicInteger(0)
   val pidSerial = new AtomicInteger(0)
   val executor = poolFactory.createActorPool
-  val factory = new CappedFiberFactory(executor, 1000)
+  val factory = new PoolFiberFactory(executor)
   val executionHandler = new ExecutionHandler(poolFactory.createExecutorPool)
-  val server = new ErlangNodeServer(this,config.typeFactory, config.typeEncoder)
+  val server = new ErlangNodeServer(this,config.typeFactory, config.typeEncoder, config.typeDecoder)
   val localEpmd = Epmd("localhost")
   localEpmd.alive(server.port, splitNodename(name)) match {
     case Some(c) => creation = c
@@ -473,15 +466,18 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
   def deliverLink(link : Link) {
     val from = link.from
     val to = link.to
-    log.debug("deliverLink %s -> %s", from, to)
+    logger.debug("deliverLink %s -> %s", from, to)
     if (from == to) {
-      log.warn("Trying to link a pid to itself: %s", from)
+      logger.warn("Trying to link a pid to itself: %s".format(from))
       return
     }
 
     if (isLocal(to)) {
-      for (p <- process(to)) {
-        p.registerLink(from)
+      process(to) match {
+        case Some(p : ProcessAdapter) =>
+          p.registerLink(from)
+        case None =>
+          break(link, 'noproc)
       }
     } else {
       getOrConnectAndSend(to.node, LinkMessage(from, to), { channel =>
@@ -493,13 +489,13 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
 
   //node internal interface
   def link(from : Pid, to : Pid) {
-    log.debug("link %s -> %s", from, to)
+    logger.debug("link %s -> %s", from, to)
     if (from == to) {
-      log.warn("Trying to link a pid to itself: %s", from)
+      logger.warn("Trying to link a pid to itself: %s".format(from))
       return
     }
     if (!isLocal(from) && !isLocal(to)) {
-      log.warn("Trying to link non-local pids: %s -> %s", from, to)
+      logger.warn("Trying to link non-local pids: %s -> %s", from, to)
       return
     }
 
@@ -514,14 +510,14 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
 
   // Link two pids without triggering a send of a Link message to the remote.
   def linkWithoutNotify(from : Pid, to : Pid, channel: Channel) {
-    log.debug("link w/o notify %s -> %s", from, to)
+    logger.debug("link w/o notify %s -> %s", from, to)
     if (from == to) {
-      log.warn("Trying to link a pid to itself: %s", from)
+      logger.warn("Trying to link a pid to itself: %s".format(from))
       return
     }
 
     if (!isLocal(from) && !isLocal(to)) {
-      log.warn("Trying to link non-local pids: %s -> %s", from, to)
+      logger.warn("Trying to link non-local pids: %s -> %s", from, to)
       return
     }
 
@@ -531,8 +527,13 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
         if (!isLocal(from))
           links.getOrElseUpdate(channel, new NonBlockingHashSet[Link]).add(link)
       case None =>
-        if (!isLocal(from))
+        if (isLocal(from)) {
+          logger.warn("Try to link non-live process %s to %s", from, to)
+          val link = Link(from, to)
+          break(link, 'noproc)
+        } else {
           links.getOrElseUpdate(channel, new NonBlockingHashSet[Link]).add(Link(from, to))
+        }
     }
 
     process(to) match {
@@ -542,8 +543,13 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
           links.getOrElseUpdate(channel, new NonBlockingHashSet[Link]).add(link)
 
       case None =>
-        if (!isLocal(to))
+        if (isLocal(to)) {
+          logger.warn("Try to link non-live process %s to %s", to, from)
+          val link = Link(from, to)
+          break(link, 'noproc)
+        } else {
           links.getOrElseUpdate(channel, new NonBlockingHashSet[Link]).add(Link(from, to))
+        }
     }
   }
 
@@ -551,9 +557,9 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
     val monitoring = monitor.monitoring
     val monitored = monitor.monitored
     var ref = monitor.ref
-    log.debug("deliverMonitor %s -> %s (%s)", monitoring, monitored, ref)
+    logger.debug("deliverMonitor %s -> %s (%s)", monitoring, monitored, ref)
     if (monitoring == monitored) {
-      log.warn("A process tried to monitor itself: %s", monitoring)
+      logger.warn("A process tried to monitor itself: %s".format(monitoring))
       return
     }
 
@@ -573,27 +579,27 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
   }
 
   def monitorWithoutNotify(monitoring : Pid, monitored : Any, ref : Reference, channel : Channel) {
-    log.debug("monitor %s -> %s (%s)", monitoring, monitored, ref)
+    logger.debug("monitor %s -> %s (%s)", monitoring, monitored, ref)
     if (monitoring == monitored) {
-      log.warn("Trying to monitor itself: %s", monitoring)
+      logger.warn("Trying to monitor itself: %s".format(monitoring))
       return
     }
 
     if (!isLocal(monitoring) && !isLocal(monitored)) {
-      log.warn("Try to monitor between non-local pids: %s -> %s (%s)", monitoring, monitored, ref)
+      logger.warn("Try to monitor between non-local pids: %s -> %s (%s)", monitoring, monitored, ref)
       return
     }
 
-    log.debug("pids %s", processes.keys.toList)
+    logger.debug("pids %s".format(processes.keys.toList))
     process(monitored) match {
       case Some(p) =>
-        log.debug("adding monitor for %s", p)
+        logger.debug("adding monitor for %s".format(p))
         val monitor = p.registerMonitor(monitoring, ref)
         if (!isLocal(monitored))
           monitors.getOrElseUpdate(channel, new NonBlockingHashSet[Monitor]).add(monitor)
       case None =>
         if (isLocal(monitored)) {
-          log.warn("Try to monitor non-live process: %s -> %s (%s)", monitoring, monitored, ref)
+          logger.warn("Try to monitor non-live process: %s -> %s (%s)", monitoring, monitored, ref)
           val monitor = Monitor(monitoring, monitored, ref)
           monitorExit(monitor, 'noproc)
         } else {
@@ -605,7 +611,7 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
 
   //node internal interface
   def demonitor(monitoring : Pid, monitored : Any, ref : Reference) {
-    log.debug("demonitor %s -> %s (%s)", monitoring, monitored, ref)
+    logger.debug("demonitor %s -> %s (%s)", monitoring, monitored, ref)
     for (p <- process(monitored)) {
       p.demonitor(ref)
     }
@@ -615,9 +621,9 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
     val monitoring = monitor.monitoring
     val monitored = monitor.monitored
     val ref = monitor.ref
-    log.debug("handling monitor exit for %s", monitor)
+    logger.debug("handling monitor exit for %s".format(monitor))
     if (isLocal(monitoring)) {
-      log.debug("monitoring is local %s", monitoring)
+      logger.debug("monitoring is local %s".format(monitoring))
       for (proc <- process(monitoring)) {
         proc.handleMonitorExit(monitored, ref, reason)
       }
@@ -699,21 +705,21 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
   }
 
   def handleSend(to : Pid, msg : Any) {
-    log.debug("send %s to %s", msg, to)
+    logger.debug("send %s to %s", msg, to)
     if (!tryDeliverReply(to,msg)) {
       if (isLocal(to)) {
         val process = processes.get(to)
-        log.debug("send local to %s", process)
+        logger.debug("send local to %s".format(process))
         if (process != null) {
           process.handleMessage(msg)
         }
       } else {
-        log.debug("send remote to %s", to.node)
+        logger.debug("send remote to %s".format(to.node))
         try {
           getOrConnectAndSend(to.node, SendMessage(to, msg))
         } catch {
           case e : Exception =>
-            log.warn(e, "trouble sending message to %s", to.node)
+            logger.warn("trouble sending message to %s".format(to.node))
         }
       }
     }
@@ -735,7 +741,7 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
       getOrConnectAndSend(peer, RegSend(from, regName, msg))
     } catch {
       case e : Exception =>
-        log.warn(e, "trouble sending message to %s", peer)
+        logger.warn("trouble sending message to %s".format(peer))
     }
   }
 
@@ -775,6 +781,13 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
       }
     } else {
       getOrConnectAndSend(to.node, ExitMessage(from,to,reason))
+    }
+    if (isLocal(from)) {
+      for (proc <- process(from)) {
+        proc.handleExit(to, reason)
+      }
+    } else {
+      getOrConnectAndSend(from.node, ExitMessage(to,from,reason))
     }
   }
 
@@ -841,7 +854,7 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
   }
 
   def getOrConnectAndSend(peer : Symbol, msg : Any, afterHandshake : Channel => Unit = { channel => Unit }) {
-    log.debug("node %s sending %s", this, msg)
+    logger.debug("node %s sending %s", this, msg)
     val channel = channels.getOrElseUpdate(peer, {
       connectAndSend(peer, None)
     })
@@ -863,7 +876,7 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
     val peerName = splitNodename(peer)
     val port = Epmd(hostname).lookupPort(peerName).getOrElse(throw new ErlangNodeException("Cannot lookup peer: " + peer.name))
     val client = new ErlangNodeClient(this, peer, hostname, port, msg, config.typeFactory,
-      config.typeEncoder, afterHandshake)
+      config.typeEncoder, config.typeDecoder, afterHandshake)
     client.channel
   }
 

@@ -15,29 +15,26 @@
 //
 package scalang.node
 
-import java.net._
-import java.util.concurrent._
-import atomic._
 import org.jboss.netty._
-import bootstrap._
 import channel._
 import scalang._
-import com.codahale.logula.Logging
+import org.apache.log4j.Logger
 
 class ErlangHandler(
     node : ErlangNode,
-    afterHandshake : Channel => Unit = { _ => Unit }) extends SimpleChannelUpstreamHandler with Logging {
+    afterHandshake : Channel => Unit = { _ => Unit }) extends SimpleChannelUpstreamHandler {
 
   @volatile var peer : Symbol = null
+  val logger = Logger.getLogger("ErlangHandler")
 
   override def exceptionCaught(ctx : ChannelHandlerContext, e : ExceptionEvent) {
-    log.error(e.getCause, "error caught in erlang handler %s", peer)
+    logger.error("error caught in erlang handler %s".format(peer))
     ctx.getChannel.close
   }
 
   override def messageReceived(ctx : ChannelHandlerContext, e : MessageEvent) {
     val msg = e.getMessage
-    log.debug("handler message %s", msg)
+    logger.debug("handler message %s".format(msg))
     msg match {
       case Tick =>
         ctx.getChannel.write(Tock) //channel heartbeat for erlang
@@ -49,7 +46,7 @@ class ErlangHandler(
         node.registerConnection(name, channel)
         afterHandshake(channel)
       case LinkMessage(from, to) =>
-        log.debug("received link request from %s.", from)
+        logger.debug("received link request from %s.".format(from))
         node.linkWithoutNotify(from, to, e.getChannel)
       case SendMessage(to, msg) =>
         node.handleSend(to, msg)
@@ -71,7 +68,7 @@ class ErlangHandler(
   }
 
   override def channelDisconnected(ctx : ChannelHandlerContext, e : ChannelStateEvent) {
-    log.info("channel disconnected %s %s. peer: %s", ctx, e, peer)
+    logger.info("channel disconnected %s %s. peer: %s", ctx, e, peer)
     if (peer != null) {
       node.disconnected(peer, e.getChannel)
     }

@@ -21,22 +21,22 @@ import netty.channel._
 import java.nio._
 import java.math.BigInteger
 import netty.buffer._
-import scala.annotation.tailrec
 import scalang._
-import java.util.{Formatter, Locale}
+import java.util.Formatter
 import java.util.{List => JList}
 import scalang.util.ByteArray
 import scalang.util.CamelToUnder._
-import com.codahale.logula.Logging
-import com.yammer.metrics.scala._
+//import com.yammer.metrics.scala._
+import org.apache.log4j.Logger
 
-class ScalaTermEncoder(peer: Symbol, encoder: TypeEncoder) extends OneToOneEncoder with Logging with Instrumented {
+class ScalaTermEncoder(peer: Symbol, encoder: TypeEncoder = NoneTypeEncoder) extends OneToOneEncoder {
 
-  val encodeTimer = metrics.timer("encoding", peer.name)
+  //val encodeTimer = metrics.timer("encoding", peer.name)
+  val logger = Logger.getLogger("ScalaTermEncoder")
 
   override def encode(ctx : ChannelHandlerContext, channel : Channel, obj : Any) : Object = {
-    log.debug("sending msg %s", obj)
-    encodeTimer.time {
+    logger.debug("sending msg %s".format(obj))
+    //encodeTimer.time {
       val buffer = ChannelBuffers.dynamicBuffer(512)
       //write distribution header
       buffer.writeBytes(ByteArray(112,131))
@@ -68,7 +68,7 @@ class ScalaTermEncoder(peer: Symbol, encoder: TypeEncoder) extends OneToOneEncod
       }
 
       buffer
-    }
+    //}
   }
 
   def encodeObject(buffer : ChannelBuffer, obj : Any) : Unit = obj match {

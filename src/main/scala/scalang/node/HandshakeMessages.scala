@@ -64,10 +64,11 @@ object DistributionFlags {
   val bitBinaries = 0x400
   val newFloats = 0x800
   val smallAtomTags = 0x4000
+  val utf8Atoms = 0x10000
 
   val default = extendedReferences | extendedPidsPorts |
     bitBinaries | newFloats | funTags | newFunTags |
-    distMonitor | distMonitorName | smallAtomTags
+    distMonitor | distMonitorName | smallAtomTags | utf8Atoms
 }
 
 class ErlangAuthException(msg : String) extends Exception(msg)

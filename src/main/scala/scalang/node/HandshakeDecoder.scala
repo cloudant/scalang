@@ -33,7 +33,7 @@ class HandshakeDecoder extends OneToOneDecoder {
     if (!buffer.readable) {
       return buffer
     }
-    buffer.markReaderIndex
+    //buffer.markReaderIndex
     (mode, buffer.readByte) match {
       case ('name, 110) => //name message
         val version = buffer.readShort

@@ -21,11 +21,12 @@ import netty.bootstrap._
 import netty.channel._
 import socket.nio._
 import overlock.threadpool._
+import java.util.concurrent.Callable
 
 object Epmd {
   val defaultPort = 4369
-  lazy val bossPool = ThreadPool.instrumentedElastic("scalang.epmd", "boss", 1, 20)
-  lazy val workerPool = ThreadPool.instrumentedElastic("scalang.epmd", "worker", 1, 20)
+  lazy val bossPool = ThreadPool.instrumentedFixed("scalang.epmd", "boss", 20)
+  lazy val workerPool = ThreadPool.instrumentedFixed("scalang.epmd", "worker", 20)
 
   def apply(host : String) : Epmd = {
     val port = Option(System.getenv("ERL_EPMD_PORT")).map(_.toInt).getOrElse(defaultPort)
@@ -65,19 +66,27 @@ class Epmd(val host : String, val port : Int) {
   }
 
   def alive(portNo : Int, nodeName : String) : Option[Int] = {
-    channel.write(AliveReq(portNo,nodeName))
-    val response = handler.response.call.asInstanceOf[AliveResp]
-    if (response.result == 0) {
-      Some(response.creation)
+    var response: Callable[Any] = null
+    handler.synchronized {
+      response = handler.response
+      channel.write(AliveReq(portNo,nodeName))
+    }
+    val aliveResponse = response.call.asInstanceOf[AliveResp]
+    if (aliveResponse.result == 0) {
+      Some(aliveResponse.creation)
     } else {
-      error("Epmd response was: " + response.result)
+      sys.error("Epmd response was: " + aliveResponse.result)
       None
     }
   }
 
   def lookupPort(nodeName : String) : Option[Int] = {
-    channel.write(PortPleaseReq(nodeName))
-    handler.response.call match {
+    var response: Callable[Any] = null
+    handler.synchronized {
+      response = handler.response
+      channel.write(PortPleaseReq(nodeName))
+    }
+    response.call match {
       case PortPleaseResp(portNo, _) => Some(portNo)
       case PortPleaseError(_) => None
     }
