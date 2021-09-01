@@ -25,10 +25,14 @@ class EpmdDecoder extends FrameDecoder {
     if (buffer.readableBytes < 1) return null
     val header = buffer.getByte(0)
     header match {
-      case 121 => //decode alive2 resp
+      case 118 | 121 => //decode alive2 resp
         if (buffer.readableBytes < 4) return null
         val result = buffer.getByte(1)
-        val creation = buffer.getUnsignedShort(2)
+        val creation = if (header == 118) {
+          buffer.getInt(2)
+        } else {
+          buffer.getUnsignedShort(2)
+        }
         buffer.skipBytes(4)
         AliveResp(result, creation)
       case 119 => //decode port2 resp
