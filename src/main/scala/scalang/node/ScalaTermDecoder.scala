@@ -132,24 +132,27 @@ class ScalaTermDecoder(peer : Symbol, factory : TypeFactory, decoder : TypeDecod
         val id = buffer.readInt
         val creation = buffer.readUnsignedByte
         Reference(node, Seq(id), creation)
-      case 89 | 102 => //new port(erl 23), port
+      case 89 => //new port(erl 23)
         val node = readTerm(buffer).asInstanceOf[Symbol]
         val id = buffer.readInt
-        val creation = if (typeOrdinal == 89) {
-            buffer.readInt
-          } else {
-            buffer.readByte
-          }
+        val creation = buffer.readInt
         Port(node, id, creation)
-      case 88 | 103 => //new pid(erl 23), pid
+      case 102 => //port
+        val node = readTerm(buffer).asInstanceOf[Symbol]
+        val id = buffer.readInt
+        val creation = buffer.readByte
+        Port(node, id, creation)
+      case 88 => //new pid(erl 23)
         val node = readTerm(buffer).asInstanceOf[Symbol]
         val id = buffer.readInt
         val serial = buffer.readInt
-        val creation = if (typeOrdinal == 88) {
-            buffer.readInt
-          } else {
-            buffer.readUnsignedByte
-          }
+        val creation = buffer.readInt
+        Pid(node,id,serial,creation)
+      case 103 => //pid
+        val node = readTerm(buffer).asInstanceOf[Symbol]
+        val id = buffer.readInt
+        val serial = buffer.readInt
+        val creation = buffer.readUnsignedByte
         Pid(node,id,serial,creation)
       case 104 => //small tuple -- will be a scala tuple up to size 22
         val arity = buffer.readUnsignedByte
@@ -199,14 +202,18 @@ class ScalaTermDecoder(peer : Symbol, factory : TypeFactory, decoder : TypeDecod
           val bytes = readReversed(length, buffer)
           BigInt(sign, bytes)
         }
-      case 90 | 114 => //newer reference(erl 23), new reference
+      case 90 => //newer reference(erl 23)
         val length = buffer.readShort
         val node = readTerm(buffer).asInstanceOf[Symbol]
-        val creation = if (typeOrdinal == 90) {
+        val creation = buffer.readInt
+        val id = (for(n <- (0 until length)) yield {
           buffer.readInt
-        } else {
-          buffer.readUnsignedByte
-        }
+        }).toSeq
+        Reference(node, id, creation)
+      case 114 => //new reference
+        val length = buffer.readShort
+        val node = readTerm(buffer).asInstanceOf[Symbol]
+        val creation = buffer.readUnsignedByte
         val id = (for(n <- (0 until length)) yield {
           buffer.readInt
         }).toSeq
