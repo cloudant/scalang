@@ -63,7 +63,7 @@ class ScalaTermEncoder(peer: Symbol, encoder: TypeEncoder = NoneTypeEncoder) ext
         case DemonitorMessage(monitoring, monitored, ref) =>
           encodeObject(buffer, (20, monitoring, monitored, ref))
         case MonitorExitMessage(monitored, monitoring, ref, reason) =>
-          encodeObject(buffer, (21, monitoring, monitored, ref, reason))
+          encodeObject(buffer, (21, monitored, monitoring, ref, reason))
       }
 
       buffer
