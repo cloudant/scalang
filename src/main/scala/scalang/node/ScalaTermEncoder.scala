@@ -89,7 +89,7 @@ class ScalaTermEncoder(peer: Symbol, encoder: TypeEncoder = NoneTypeEncoder) ext
       writeAtom(buffer, 'false)
     case s : Symbol =>
       writeAtom(buffer, s)
-    case Reference(node, id, creation : Int) => //we only emit new references
+    case Reference(node, id, creation) => //we only emit new references
       buffer.writeByte(90)
       buffer.writeShort(id.length)
       writeAtom(buffer, node)
@@ -97,36 +97,17 @@ class ScalaTermEncoder(peer: Symbol, encoder: TypeEncoder = NoneTypeEncoder) ext
       for (i <- id) {
         buffer.writeInt(i)
       }
-    case Reference(node, id, creation) => //we only emit new references
-      buffer.writeByte(114)
-      buffer.writeShort(id.length)
-      writeAtom(buffer, node)
-      buffer.writeByte(creation)
-      for (i <- id) {
-        buffer.writeInt(i)
-      }
-    case Port(node, id, creation : Int) =>
+    case Port(node, id, creation) =>
       buffer.writeByte(89)
       writeAtom(buffer, node)
       buffer.writeInt(id)
       buffer.writeInt(creation)
-    case Port(node, id, creation) =>
-      buffer.writeByte(102)
-      writeAtom(buffer, node)
-      buffer.writeInt(id)
-      buffer.writeByte(creation)
-    case Pid(node, id, serial, creation : Int) =>
+    case Pid(node, id, serial, creation) =>
       buffer.writeByte(88)
       writeAtom(buffer, node)
       buffer.writeInt(id)
       buffer.writeInt(serial)
       buffer.writeInt(creation)
-    case Pid(node, id, serial, creation) =>
-      buffer.writeByte(103)
-      writeAtom(buffer, node)
-      buffer.writeInt(id)
-      buffer.writeInt(serial)
-      buffer.writeByte(creation)
     case Fun(pid, module, index, uniq, vars) =>
       buffer.writeByte(117)
       buffer.writeInt(vars.length)
