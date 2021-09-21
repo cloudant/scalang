@@ -132,11 +132,22 @@ class ScalaTermDecoder(peer : Symbol, factory : TypeFactory, decoder : TypeDecod
         val id = buffer.readInt
         val creation = buffer.readUnsignedByte
         Reference(node, Seq(id), creation)
+      case 89 => //new port(erl 23)
+        val node = readTerm(buffer).asInstanceOf[Symbol]
+        val id = buffer.readInt
+        val creation = buffer.readInt
+        Port(node, id, creation)
       case 102 => //port
         val node = readTerm(buffer).asInstanceOf[Symbol]
         val id = buffer.readInt
         val creation = buffer.readByte
         Port(node, id, creation)
+      case 88 => //new pid(erl 23)
+        val node = readTerm(buffer).asInstanceOf[Symbol]
+        val id = buffer.readInt
+        val serial = buffer.readInt
+        val creation = buffer.readInt
+        Pid(node,id,serial,creation)
       case 103 => //pid
         val node = readTerm(buffer).asInstanceOf[Symbol]
         val id = buffer.readInt
@@ -191,6 +202,14 @@ class ScalaTermDecoder(peer : Symbol, factory : TypeFactory, decoder : TypeDecod
           val bytes = readReversed(length, buffer)
           BigInt(sign, bytes)
         }
+      case 90 => //newer reference(erl 23)
+        val length = buffer.readShort
+        val node = readTerm(buffer).asInstanceOf[Symbol]
+        val creation = buffer.readInt
+        val id = (for(n <- (0 until length)) yield {
+          buffer.readInt
+        }).toSeq
+        Reference(node, id, creation)
       case 114 => //new reference
         val length = buffer.readShort
         val node = readTerm(buffer).asInstanceOf[Symbol]

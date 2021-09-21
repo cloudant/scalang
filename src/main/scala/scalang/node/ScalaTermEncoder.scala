@@ -63,7 +63,7 @@ class ScalaTermEncoder(peer: Symbol, encoder: TypeEncoder = NoneTypeEncoder) ext
         case DemonitorMessage(monitoring, monitored, ref) =>
           encodeObject(buffer, (20, monitoring, monitored, ref))
         case MonitorExitMessage(monitored, monitoring, ref, reason) =>
-          encodeObject(buffer, (21, monitoring, monitored, ref, reason))
+          encodeObject(buffer, (21, monitored, monitoring, ref, reason))
       }
 
       buffer
@@ -90,24 +90,24 @@ class ScalaTermEncoder(peer: Symbol, encoder: TypeEncoder = NoneTypeEncoder) ext
     case s : Symbol =>
       writeAtom(buffer, s)
     case Reference(node, id, creation) => //we only emit new references
-      buffer.writeByte(114)
+      buffer.writeByte(90)
       buffer.writeShort(id.length)
       writeAtom(buffer, node)
-      buffer.writeByte(creation)
+      buffer.writeInt(creation)
       for (i <- id) {
         buffer.writeInt(i)
       }
     case Port(node, id, creation) =>
-      buffer.writeByte(102)
+      buffer.writeByte(89)
       writeAtom(buffer, node)
       buffer.writeInt(id)
-      buffer.writeByte(creation)
+      buffer.writeInt(creation)
     case Pid(node, id, serial, creation) =>
-      buffer.writeByte(103)
+      buffer.writeByte(88)
       writeAtom(buffer, node)
       buffer.writeInt(id)
       buffer.writeInt(serial)
-      buffer.writeByte(creation)
+      buffer.writeInt(creation)
     case Fun(pid, module, index, uniq, vars) =>
       buffer.writeByte(117)
       buffer.writeInt(vars.length)
