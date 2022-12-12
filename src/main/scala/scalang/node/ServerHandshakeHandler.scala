@@ -30,7 +30,7 @@ import scala.math._
 import scala.collection.JavaConversions._
 import java.security.{SecureRandom,MessageDigest}
 
-class ServerHandshakeHandler(name : Symbol, cookie : String, posthandshake : (Symbol,ChannelPipeline) => Unit) extends HandshakeHandler(posthandshake) {
+class ServerHandshakeHandler(name : Symbol, cookie : String, creation : Int, posthandshake : (Symbol,ChannelPipeline) => Unit) extends HandshakeHandler(posthandshake) {
   states(
     state('disconnected, {
       case ConnectedMessage => 'connected
@@ -41,6 +41,11 @@ class ServerHandshakeHandler(name : Symbol, cookie : String, posthandshake : (Sy
         receiveName(msg)
         sendStatus
         sendChallenge
+        'challenge_sent
+      case msg : NameMessageV5 =>
+        receiveName(msg)
+        sendStatus
+        sendChallengeV5
         'challenge_sent
     }),
 
@@ -60,6 +65,10 @@ class ServerHandshakeHandler(name : Symbol, cookie : String, posthandshake : (Sy
     peer = Symbol(msg.name)
   }
 
+  protected def receiveName(msg : NameMessageV5) {
+    peer = Symbol(msg.name)
+  }
+
   protected def sendStatus {
     val channel = ctx.getChannel
     val future = Channels.future(channel)
@@ -70,7 +79,15 @@ class ServerHandshakeHandler(name : Symbol, cookie : String, posthandshake : (Sy
     val channel = ctx.getChannel
     val future = Channels.future(channel)
     challenge = random.nextInt
-    val msg = ChallengeMessage(5, DistributionFlags.default, challenge, name.name)
+    val msg = ChallengeMessage(DistributionFlags.default, challenge, creation, name.name)
+    ctx.sendDownstream(new DownstreamMessageEvent(channel,future,msg,null))
+  }
+
+  protected def sendChallengeV5 {
+    val channel = ctx.getChannel
+    val future = Channels.future(channel)
+    challenge = random.nextInt
+    val msg = ChallengeMessageV5(5, DistributionFlags.defaultV5, challenge, name.name)
     ctx.sendDownstream(new DownstreamMessageEvent(channel,future,msg,null))
   }
 

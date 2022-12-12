@@ -20,11 +20,15 @@ import scala.collection.mutable.StringBuilder
 
 case object ConnectedMessage
 
-case class NameMessage(version : Short, flags : Int, name : String)
+case class NameMessage(flags : Long, creation : Int, name : String)
+
+case class NameMessageV5(version : Short, flags : Int, name : String)
 
 case class StatusMessage(status : String)
 
-case class ChallengeMessage(version : Short, flags : Int, challenge : Int, name : String)
+case class ChallengeMessage(flags : Long, challenge : Int, creation : Int, name : String)
+
+case class ChallengeMessageV5(version : Short, flags : Int, challenge : Int, name : String)
 
 case class ChallengeReplyMessage(challenge : Int, digest : Array[Byte]) {
   override def toString : String = {

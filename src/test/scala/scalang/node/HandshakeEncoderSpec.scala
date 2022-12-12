@@ -13,11 +13,11 @@ class HandshakeEncoderSpec extends SpecificationWithJUnit {
     "encode name messages" in {
       val encoder = new HandshakeEncoder
       val embedder = new EncoderEmbedder[ChannelBuffer](encoder)
-      embedder.offer(NameMessage(5, 32765, "tmp@blah"))
+      embedder.offer(NameMessage(32765, 1, "tmp@blah"))
 
       val buffer = embedder.poll
       val bytes = buffer.array
-      bytes.deep must ==(ByteArray(0,15, 110, 0,5, 0,0,127,253, 116,109,112,64,98,108,97,104).deep)
+      bytes.deep must ==(ByteArray(0,23, 78, 0,0,0,0,0,0,127,253, 0,0,0,1, 0,8, 116,109,112,64,98,108,97,104).deep)
     }
 
     "encode status messages" in {
@@ -33,11 +33,11 @@ class HandshakeEncoderSpec extends SpecificationWithJUnit {
     "encode challenge messages" in {
       val encoder = new HandshakeEncoder
       val embedder = new EncoderEmbedder[ChannelBuffer](encoder)
-      embedder.offer(ChallengeMessage(5, 32765, 80085, "tmp@blah"))
+      embedder.offer(ChallengeMessage(32765, 80085, 1, "tmp@blah"))
 
       val buffer = embedder.poll
       val bytes = buffer.array
-      bytes.deep must ==(ByteArray(0,19, 110, 0,5, 0,0,127,253, 0,1,56,213, 116,109,112,64,98,108,97,104).deep)
+      bytes.deep must ==(ByteArray(0,27, 78, 0,0,0,0,0,0,127,253, 0,1,56,213, 0,0,0,1, 0,8, 116,109,112,64,98,108,97,104).deep)
     }
 
     "encode challenge reply messages" in {

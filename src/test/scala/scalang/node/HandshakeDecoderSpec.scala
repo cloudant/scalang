@@ -13,11 +13,11 @@ class HandshakeDecoderSpec extends SpecificationWithJUnit {
       val decoder = new HandshakeDecoder
       val embedder = new DecoderEmbedder[NameMessage](decoder)
 
-      val bytes = ByteArray(110, 0,5, 0,0,127,253, 116,109,112,64,98,108,97,104)
+      val bytes = ByteArray(78, 0,0,0,0,0,0,127,253, 0,0,0,1, 0,8, 116,109,112,64,98,108,97,104)
       val buffer = copiedBuffer(bytes)
       embedder.offer(buffer)
       val msg = embedder.poll
-      msg must ==(NameMessage(5, 32765, "tmp@blah"))
+      msg must ==(NameMessage(32765, 1, "tmp@blah"))
 
       decoder.mode must ==('challenge) //decoding a name message should trigger a state change
     }
@@ -37,11 +37,11 @@ class HandshakeDecoderSpec extends SpecificationWithJUnit {
       val decoder = new HandshakeDecoder
       val embedder = new DecoderEmbedder[ChallengeMessage](decoder)
       decoder.mode = 'challenge
-      val bytes = ByteArray(110, 0,5, 0,0,127,253, 0,1,56,213, 116,109,112,64,98,108,97,104)
+      val bytes = ByteArray(78, 0,0,0,0,0,0,127,253, 0,1,56,213, 0,0,0,1, 0,8, 116,109,112,64,98,108,97,104)
       val buffer = copiedBuffer(bytes)
       embedder.offer(buffer)
       val msg = embedder.poll
-      msg must ==(ChallengeMessage(5, 32765, 80085, "tmp@blah"))
+      msg must ==(ChallengeMessage(32765, 80085, 1, "tmp@blah"))
     }
 
     "decode reply messages" in {

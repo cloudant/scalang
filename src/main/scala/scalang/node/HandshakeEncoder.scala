@@ -24,7 +24,18 @@ class HandshakeEncoder extends OneToOneEncoder {
 
   def encode(ctx : ChannelHandlerContext, channel : Channel, obj : Any) : Object = {
     obj match {
-      case NameMessage(version, flags, name) =>
+      case NameMessage(flags, creation, name) =>
+        val bytes = name.getBytes
+        val length = 1 + 8 + 4 + 2 + bytes.length
+        val buffer = ChannelBuffers.dynamicBuffer(length+2)
+        buffer.writeShort(length)
+        buffer.writeByte(78)
+        buffer.writeLong(flags)
+        buffer.writeInt(creation)
+        buffer.writeShort(bytes.length)
+        buffer.writeBytes(bytes)
+        buffer
+      case NameMessageV5(version, flags, name) =>
         val bytes = name.getBytes
         val length = 7 + bytes.length
         val buffer = ChannelBuffers.dynamicBuffer(length+2)
@@ -42,7 +53,19 @@ class HandshakeEncoder extends OneToOneEncoder {
         buffer.writeByte(115)
         buffer.writeBytes(bytes)
         buffer
-      case ChallengeMessage(version, flags, challenge, name) =>
+      case ChallengeMessage(flags, challenge, creation, name) =>
+        val bytes = name.getBytes
+        val length = 1 + 8 + 4 + 4 + 2 + bytes.length
+        val buffer = ChannelBuffers.dynamicBuffer(length+2)
+        buffer.writeShort(length)
+        buffer.writeByte(78)
+        buffer.writeLong(flags)
+        buffer.writeInt(challenge)
+        buffer.writeInt(creation)
+        buffer.writeShort(bytes.length)
+        buffer.writeBytes(bytes)
+        buffer
+      case ChallengeMessageV5(version, flags, challenge, name) =>
         val bytes = name.getBytes
         val length = 11 + bytes.length
         val buffer = ChannelBuffers.dynamicBuffer(length+2)
