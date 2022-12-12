@@ -37,7 +37,7 @@ abstract class Service[A <: Product](ctx : ServiceContext[A]) extends Process(ct
   /**
    * Handle a call style of message which will expect a response.
    */
-  def handleCall(tag : (Pid,Reference), request : Any) : Any = {
+  def handleCall(tag : (Pid,Any), request : Any) : Any = {
     throw new Exception(getClass + " did not define a call handler.")
   }
 
@@ -58,7 +58,7 @@ abstract class Service[A <: Product](ctx : ServiceContext[A]) extends Process(ct
   override def onMessage(msg : Any) = msg match {
     case ('ping, from : Pid, ref : Reference) =>
       from ! ('pong, ref)
-    case (Symbol("$gen_call"), (from : Pid, ref : Reference), request : Any) =>
+    case (Symbol("$gen_call"), (from : Pid, ref : Any), request : Any) =>
       handleCall((from, ref), request) match {
         case ('reply, reply) =>
           from ! (ref, reply)
