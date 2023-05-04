@@ -35,22 +35,38 @@ class HandshakeDecoder extends OneToOneDecoder {
     }
     buffer.markReaderIndex
     (mode, buffer.readByte) match {
-      case ('name, 110) => //name message
+      case ('name, 78) => //new name message, 78 = ascii 'N'
+        val flags = buffer.readLong
+        val creation = buffer.readInt
+        val nameLength = buffer.readShort
+        val bytes = new Array[Byte](nameLength)
+        buffer.readBytes(bytes)
+        mode = 'challenge
+        NameMessage(flags, creation, new String(bytes))
+      case ('name, 110) => //old name message, 110 = ascii 'n'
         val version = buffer.readShort
         val flags = buffer.readInt
         val nameLength = buffer.readableBytes
         val bytes = new Array[Byte](nameLength)
         buffer.readBytes(bytes)
         mode = 'challenge
-        NameMessage(version, flags, new String(bytes))
-      case ('challenge, 110) => //challenge message
+        NameMessageV5(version, flags, new String(bytes))
+      case ('challenge, 78) => //new challenge message
+        val flags = buffer.readLong
+        val challenge = buffer.readInt
+        val creation = buffer.readInt
+        val nameLength = buffer.readShort
+        val bytes = new Array[Byte](nameLength)
+        buffer.readBytes(bytes)
+        ChallengeMessage(flags, challenge, creation, new String(bytes))
+      case ('challenge, 110) => //old challenge message
         val version = buffer.readShort
         val flags = buffer.readInt
         val challenge = buffer.readInt
         val nameLength = buffer.readableBytes
         val bytes = new Array[Byte](nameLength)
         buffer.readBytes(bytes)
-        ChallengeMessage(version, flags, challenge, new String(bytes))
+        ChallengeMessageV5(version, flags, challenge, new String(bytes))
       case (_, 115) => //status message
         val statusLength = buffer.readableBytes
         val bytes = new Array[Byte](statusLength)

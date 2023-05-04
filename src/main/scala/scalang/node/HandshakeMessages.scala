@@ -20,11 +20,15 @@ import scala.collection.mutable.StringBuilder
 
 case object ConnectedMessage
 
-case class NameMessage(version : Short, flags : Int, name : String)
+case class NameMessage(flags : Long, creation : Int, name : String)
+
+case class NameMessageV5(version : Short, flags : Int, name : String)
 
 case class StatusMessage(status : String)
 
-case class ChallengeMessage(version : Short, flags : Int, challenge : Int, name : String)
+case class ChallengeMessage(flags : Long, challenge : Int, creation : Int, name : String)
+
+case class ChallengeMessageV5(version : Short, flags : Int, challenge : Int, name : String)
 
 case class ChallengeReplyMessage(challenge : Int, digest : Array[Byte]) {
   override def toString : String = {
@@ -65,12 +69,16 @@ object DistributionFlags {
   val newFloats = 0x800
   val smallAtomTags = 0x4000
   val utf8Atoms = 0x10000
-  val dFlagBigCreation = 0x40000
+  val mapTag = 0x20000
+  val bigCreation = 0x40000
+  val handshake23 = 0x1000000
 
-  val default = extendedReferences | extendedPidsPorts |
+  val defaultV5 = extendedReferences | extendedPidsPorts |
     bitBinaries | newFloats | funTags | newFunTags |
     distMonitor | distMonitorName | smallAtomTags | utf8Atoms |
-    dFlagBigCreation
+    bigCreation
+
+  val default = defaultV5 | exportPtrTag | mapTag | handshake23
 }
 
 class ErlangAuthException(msg : String) extends Exception(msg)
