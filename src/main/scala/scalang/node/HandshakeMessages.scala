@@ -72,13 +72,16 @@ object DistributionFlags {
   val mapTag = 0x20000
   val bigCreation = 0x40000
   val handshake23 = 0x1000000
+  val unlinkId = 0x2000000
+  val v4PidsRefs = 0x4L << 32
 
   val defaultV5 = extendedReferences | extendedPidsPorts |
     bitBinaries | newFloats | funTags | newFunTags |
     distMonitor | distMonitorName | smallAtomTags | utf8Atoms |
     bigCreation
 
-  val default = defaultV5 | exportPtrTag | mapTag | handshake23
+  val default = defaultV5 | exportPtrTag | mapTag | handshake23 |
+      unlinkId | v4PidsRefs
 }
 
 class ErlangAuthException(msg : String) extends Exception(msg)
