@@ -104,6 +104,8 @@ class NodeSpec extends SpecificationWithJUnit {
         node.send(('echo, echo_host), mbox.self, (mbox.self, msg))
         mbox.receive(receiveTimeout) == (Some(msg))
       }) must beTrue
+      node.send(('echo, echo_host), mbox.self, (mbox.self, 'stop))
+      erl.waitFor
     }
 
     "receive remove regname" in {
@@ -122,6 +124,8 @@ class NodeSpec extends SpecificationWithJUnit {
         node.send(('echo, echo_host), mbox.self, ((mboxName, nodeName), msg))
         mbox.receive(receiveTimeout) == Some(msg)
       }) must beTrue
+      node.send(('echo, echo_host), mbox.self, ((mboxName, nodeName), 'stop))
+      erl.waitFor
     }
 
     "remove processes on exit" in {
