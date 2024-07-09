@@ -1,5 +1,5 @@
 #!/usr/bin/env escript
-%%! -smp enable -sname test@localhost -setcookie test
+%%! -sname echo@localhost -setcookie test
 
 main([]) ->
   register(echo, self()),
