@@ -1,13 +1,13 @@
 #!/usr/bin/env escript
-%%! -smp enable -sname test@localhost -setcookie test
+%%! -sname link_delivery@localhost -setcookie test
 
 main([]) ->
   process_flag(trap_exit, true),
-  Pid = spawn_link(fun() ->
+  _Pid = spawn_link(fun() ->
       process_flag(trap_exit, true),
-      {mbox,scala@localhost} ! self(),
+      {mbox_break, scala_break@localhost} ! self(),
       receive
-        {'EXIT', _From, Reason} -> {scala, scala@localhost} ! Reason;
+        {'EXIT', _From, Reason} -> {scala_break, scala_break@localhost} ! Reason;
         M -> exit(M)
       end
     end),

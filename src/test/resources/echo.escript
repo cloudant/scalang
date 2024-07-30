@@ -1,9 +1,14 @@
 #!/usr/bin/env escript
-%%! -smp enable -sname test@localhost -setcookie test
+%%! -sname echo@localhost -setcookie test
 
 main([]) ->
   register(echo, self()),
   io:format("ok~n"),
+  loop().
+
+loop() ->
   receive
+    {_Pid, stop} -> exit(stopped);
     {Pid, Msg} -> Pid ! Msg
-  end.
+  end,
+  loop().

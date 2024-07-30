@@ -1,8 +1,8 @@
 #!/usr/bin/env escript
-%%! -smp enable -sname test@localhost -setcookie test
+%%! -sname monitor@localhost -setcookie test
 
 main([]) ->
-    {mbox,scala@localhost} ! self(),
+    {mbox_monitor, scala_monitor@localhost} ! self(),
     loop().
 
 loop() ->
@@ -25,6 +25,6 @@ loop() ->
     end.
 
 respond(Msg) ->
-    {scala,scala@localhost} ! Msg.
+    {scala_monitor, scala_monitor@localhost} ! Msg.
 
 

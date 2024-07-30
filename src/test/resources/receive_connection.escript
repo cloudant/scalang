@@ -1,5 +1,5 @@
 #!/usr/bin/env escript
-%%! -smp enable -sname test@localhost -setcookie test
+%%! -sname receive_connection@localhost -setcookie test
 
 main([]) ->
   ok = net_kernel:monitor_nodes(true, [{node_type,all}]),
