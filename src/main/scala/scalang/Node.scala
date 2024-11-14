@@ -20,7 +20,7 @@ import org.jboss.{netty => netty}
 import netty.channel._
 import java.util.concurrent._
 import scalang.node._
-import org.cliffc.high_scale_lib._
+import org.jctools.maps._
 import overlock.atomicmap._
 import org.jetlang._
 import core._
