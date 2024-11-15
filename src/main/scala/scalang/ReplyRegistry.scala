@@ -16,7 +16,7 @@
 package scalang
 
 import java.util.concurrent.BlockingQueue
-import org.cliffc.high_scale_lib.NonBlockingHashMap
+import org.jctools.maps.NonBlockingHashMap
 
 trait ReplyRegistry {
   val replyWaiters = new NonBlockingHashMap[(Pid,Reference),BlockingQueue[Any]]

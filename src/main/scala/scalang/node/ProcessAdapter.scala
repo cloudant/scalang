@@ -21,8 +21,8 @@ import org.jetlang.fibers._
 import org.jetlang.channels._
 import org.jetlang.core._
 import java.util.concurrent.TimeUnit
-import org.cliffc.high_scale_lib.NonBlockingHashSet
-import org.cliffc.high_scale_lib.NonBlockingHashMap
+import org.jctools.maps.NonBlockingHashSet
+import org.jctools.maps.NonBlockingHashMap
 import scala.collection.JavaConversions._
 import com.boundary.logula.Logging
 
