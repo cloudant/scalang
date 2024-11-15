@@ -602,7 +602,10 @@ class ErlangNode(val name : Symbol, val cookie : String, config : NodeConfig) ex
       return
     }
 
-    log.debug("pids %s", processes.keys.toList)
+    if (log.isDebugEnabled) {
+        // skip running toList() if we don't intend to log it
+        log.debug("pids %s", processes.keys.toList)
+    }
     process(monitored) match {
       case Some(p) =>
         log.debug("adding monitor for %s", p)
