@@ -24,7 +24,8 @@ case class NodeConfig(
   typeFactory : TypeFactory = NoneTypeFactory,
   typeEncoder: TypeEncoder = NoneTypeEncoder,
   typeDecoder : TypeDecoder = NoneTypeDecoder,
-  tickTime : Int = 60)
+  tickTime : Int = 60,
+  useNBHM: Boolean = true)
 
 object NoneTypeFactory extends TypeFactory {
   def createType(name : Symbol, arity : Int, reader : TermReader) = None
